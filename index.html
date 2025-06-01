@@ -252,6 +252,8 @@ button:hover {
 <div class="calendar-container">
 <div class="calendar-grid" id="calendar"></div>
 </div>
+<div id="assignmentSummary" style="text-align: center; margin-top: 20px; font-weight: bold;"></div>
+
 <div class="instructions">
 <h3>📌 הוראות שימוש</h3>
 <p>לחץ על תא כדי לבחור מקום. לחיצה כפולה תסיר את ההקצאה. השתמש בכפתורים לניהול העובדים והמקומות.</p>
@@ -299,11 +301,14 @@ function openPlaceSelector(cell) {
     btn.className = 'place-btn';
     btn.textContent = place;
     btn.onclick = () => {
-      cell.textContent = place;
-      cell.classList.add('assigned');
-      closePlaceSelector();
-      autoSaveSchedule();
-    };
+  cell.textContent = place;
+  cell.className = 'time-cell assigned place-color-' + (index % 7); // Use 7 color classes
+  closePlaceSelector();
+  autoSaveSchedule();
+  updateAssignmentSummary(); // Update the counters
+};
+
+
     container.appendChild(btn);
   });
   document.getElementById("placeSelectorModal").style.display = 'flex';
@@ -315,6 +320,8 @@ function closePlaceSelector() {
 function clearAssignment(cell) {
   cell.textContent = '';
   cell.classList.remove('assigned');
+  updateAssignmentSummary();
+
   autoSaveSchedule();
 }
 
@@ -426,6 +433,27 @@ function closeEditWorkerModal() {
   editingWorkerIndex = null;
 }
 
+function updateAssignmentSummary() {
+  const counters = {};
+  let total = 0;
+  places.forEach(place => counters[place] = 0);
+
+  document.querySelectorAll('.time-cell').forEach(cell => {
+    const place = cell.textContent.trim();
+    if (place && counters.hasOwnProperty(place)) {
+      counters[place]++;
+      total++;
+    }
+  });
+
+  let summary = `סך הכל עובדים: ${total}<br>`;
+  for (const [place, count] of Object.entries(counters)) {
+    summary += `${place}: ${count} עובדים<br>`;
+  }
+
+  document.getElementById('assignmentSummary').innerHTML = summary;
+}
+
 </script>
 
 <script>
@@ -509,6 +537,8 @@ function autoSaveSchedule() {
     }
   });
   localStorage.setItem("scheduleData", JSON.stringify(data));
+  updateAssignmentSummary();
+
 }
 
 function loadSchedule(event) {
@@ -527,6 +557,8 @@ function loadSchedule(event) {
       if (cells[a.index]) {
         cells[a.index].textContent = a.value;
         cells[a.index].classList.add('assigned');
+        updateAssignmentSummary();
+
       }
     });
     autoSaveSchedule();
@@ -611,6 +643,8 @@ function clearAssignments() {
   document.querySelectorAll('.time-cell').forEach(cell => {
     clearAssignment(cell);
   });
+  updateAssignmentSummary();
+
 }
 
 function resetLocalStorage() {
